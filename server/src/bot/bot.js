@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import connectDB from "../utils/db.js";
 
@@ -37,8 +38,13 @@ bot.on("contact", async (msg) => {
   let user = await User.findOne({ phone });
   if (!user) user = await User.create({ telegramId: chatId, name, phone, role: "customer" });
 
-  // STEP 3 — SEND CORRECT PAGE BASED ON ROLE
+  // STEP 3 — GENERATE JWT TOKEN
+  const payload = { name: user.name, phone: user.phone, role: user.role };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+  // STEP 4 — SEND CORRECT PAGE BASED ON ROLE, INCLUDING TOKEN
   if (user.role === "admin") {
+    const adminUrl = `https://dormdres.vercel.app/admin?token=${token}`;
     await bot.sendMessage(
       chatId,
       `👋 Hello *${name}*, welcome back Admin!\nAccess your dashboard below.`,
@@ -49,7 +55,7 @@ bot.on("contact", async (msg) => {
             [
               {
                 text: "🛠 Open Admin Dashboard",
-                web_app: { url: "https://your-app.vercel.app/admin" },
+                web_app: { url: adminUrl },
               },
             ],
           ],
@@ -57,6 +63,7 @@ bot.on("contact", async (msg) => {
       }
     );
   } else {
+    const customerUrl = `https://dormdres.vercel.app/customer?token=${token}`;
     await bot.sendMessage(
       chatId,
       `🍔 Hi *${name}*, welcome to FoodCampus!\nOrder your favorite meal now 👇`,
@@ -67,7 +74,7 @@ bot.on("contact", async (msg) => {
             [
               {
                 text: "🚀 Open Customer Menu",
-                web_app: { url: "https://your-app.vercel.app/customer" },
+                web_app: { url: customerUrl },
               },
             ],
           ],

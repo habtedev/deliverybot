@@ -1,8 +1,29 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+function safeDecode(token?: string) {
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
 
 export default function AdminDashboard() {
+  const searchParams = useSearchParams();
+  const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
+
+  useEffect(() => {
+    const token = searchParams.get('token') || undefined;
+    const decoded = safeDecode(token);
+    setUser(decoded);
+  }, [searchParams]);
+
   const adminMenu = [
     { title: "📦 Manage Orders", href: "/admin/orders" },
     { title: "👥 Manage Users", href: "/admin/users" },
@@ -19,6 +40,8 @@ export default function AdminDashboard() {
       >
         ⚙️ Admin Dashboard
       </motion.h1>
+
+      <p className="mb-4 text-gray-700">Welcome, <span className="font-semibold">{user?.name || 'Admin'}</span></p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-3xl">
         {adminMenu.map((item, index) => (

@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
+type JwtPayload = { name?: string; phone?: string; role?: string; iat?: number; exp?: number };
+
+function isJwtPayload(obj: unknown): obj is JwtPayload {
+  return typeof obj === 'object' && obj !== null && ('role' in (obj as any) || 'name' in (obj as any));
+}
+
 const PROTECTED_PATHS = ["/admin", "/customer"];
 
 function buildAuthCookie(token: string) {
@@ -32,8 +38,13 @@ export async function middleware(request: NextRequest) {
   const tokenFromUrl = searchParams.get("token");
   if (tokenFromUrl) {
     try {
-      const { payload } = await jwtVerify(tokenFromUrl, new TextEncoder().encode(secret));
-      const role = (payload as any).role;
+      const verified = await jwtVerify(tokenFromUrl, new TextEncoder().encode(secret));
+      const payload = verified.payload as unknown;
+      if (!isJwtPayload(payload)) {
+        console.error('[middleware] token payload unexpected shape');
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+      const role = payload.role;
 
       if (pathname.startsWith("/admin") && role !== "admin")
         return NextResponse.redirect(new URL("/unauthorized", request.url));
@@ -61,8 +72,13 @@ export async function middleware(request: NextRequest) {
     const auth = request.headers.get("authorization") || "";
     if (auth.toLowerCase().startsWith("bearer ")) {
       try {
-        const { payload } = await jwtVerify(auth.slice(7).trim(), new TextEncoder().encode(secret));
-        const role = (payload as any).role;
+        const verified = await jwtVerify(auth.slice(7).trim(), new TextEncoder().encode(secret));
+        const payload = verified.payload as unknown;
+        if (!isJwtPayload(payload)) {
+          console.error('[middleware] bearer token payload unexpected shape');
+          return NextResponse.redirect(new URL('/unauthorized', request.url));
+        }
+        const role = payload.role;
         if (pathname.startsWith("/admin") && role !== "admin") return NextResponse.redirect(new URL("/unauthorized", request.url));
         if (pathname.startsWith("/customer") && role !== "customer" && role !== "admin") return NextResponse.redirect(new URL("/unauthorized", request.url));
         return NextResponse.next();
@@ -75,8 +91,13 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    const role = (payload as any).role;
+    const verified = await jwtVerify(token, new TextEncoder().encode(secret));
+    const payload = verified.payload as unknown;
+    if (!isJwtPayload(payload)) {
+      console.error('[middleware] token payload unexpected shape');
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+    const role = payload.role;
     if (pathname.startsWith("/admin") && role !== "admin") return NextResponse.redirect(new URL("/unauthorized", request.url));
     if (pathname.startsWith("/customer") && role !== "customer" && role !== "admin") return NextResponse.redirect(new URL("/unauthorized", request.url));
     return NextResponse.next();

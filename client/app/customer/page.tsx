@@ -3,6 +3,14 @@ import { jwtVerify } from 'jose';
 import CustomerClient from './CustomerClient';
 import { redirect } from 'next/navigation';
 
+type JwtPayload = { name?: string; phone?: string; role?: string; iat?: number; exp?: number };
+
+function isJwtPayload(obj: unknown): obj is JwtPayload {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const o = obj as Record<string, unknown>;
+  return 'name' in o || 'role' in o;
+}
+
 export const revalidate = 0;
 
 export default async function Page() {
@@ -20,12 +28,13 @@ export default async function Page() {
   }
 
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    const user = {
-      name: (payload as any).name,
-      phone: (payload as any).phone,
-      role: (payload as any).role,
-    };
+    const verified = await jwtVerify(token, new TextEncoder().encode(secret));
+    const payload = verified.payload as unknown;
+    if (!isJwtPayload(payload)) {
+      console.error('[customer.page] token payload unexpected shape');
+      redirect('/unauthorized');
+    }
+    const user = { name: payload.name, phone: payload.phone, role: payload.role };
     // Render client component with user prop
     return <CustomerClient user={user} />;
   } catch (err) {

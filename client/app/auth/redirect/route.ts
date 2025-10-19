@@ -2,6 +2,14 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
+type JwtPayload = {
+  name?: string;
+  phone?: string;
+  role?: string;
+  iat?: number;
+  exp?: number;
+};
+
 function base64UrlDecode(input: string) {
   // Pad and replace URL-safe chars
   input = input.replace(/-/g, '+').replace(/_/g, '/');
@@ -59,12 +67,22 @@ export async function GET(request: Request) {
   }
 
   // Verify token signature and expiry before setting cookie
+  function isJwtPayload(obj: unknown): obj is JwtPayload {
+    if (typeof obj !== 'object' || obj === null) return false;
+    const o = obj as Record<string, unknown>;
+    return 'role' in o || 'name' in o;
+  }
+
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    // Optionally you can inspect payload.role here
+    const verified = await jwtVerify(token, new TextEncoder().encode(secret));
+    const payload = verified.payload as unknown;
+    if (!isJwtPayload(payload)) {
+      console.warn('[auth.redirect] token payload unexpected shape');
+      return NextResponse.redirect(new URL('/unauthorized', url));
+    }
     console.log('[auth.redirect] token verified; payload:', JSON.stringify(payload));
   } catch (err) {
-    const msg = err && (err as any).message ? (err as any).message : String(err);
+    const msg = err instanceof Error ? err.message : String(err);
     console.warn('[auth.redirect] token verification failed:', msg);
     return NextResponse.redirect(new URL('/unauthorized', url));
   }

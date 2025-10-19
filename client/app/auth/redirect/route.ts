@@ -40,12 +40,19 @@ function deriveMaxAgeFromJwt(token: string) {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
-  const nextPath = (url.searchParams.get('next') || 'customer').replace(/^\//, '');
+  let nextPath = (url.searchParams.get('next') || 'customer').replace(/^\//, '');
 
   console.log('[auth.redirect] incoming params:', url.searchParams.toString());
   if (!token) {
     // No token — redirect to unauthorized view
     return NextResponse.redirect(new URL('/unauthorized', url));
+  }
+
+  // Accept only explicit known roles/paths to avoid accidental redirects
+  const ALLOWED = new Set(['customer', 'admin']);
+  if (!ALLOWED.has(nextPath)) {
+    console.warn('[auth.redirect] unexpected next param, defaulting to customer:', nextPath);
+    nextPath = 'customer';
   }
 
   // Derive cookie lifetime from token if possible, otherwise default to 2 hours

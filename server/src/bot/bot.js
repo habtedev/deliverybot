@@ -73,9 +73,11 @@ bot.on("contact", async (msg) => {
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
     // Build a frontend redirect URL so the frontend's /auth/redirect can set the cookie
-    const baseFrontend = (FRONTEND_URL || 'https://dormdres.vercel.app').replace(/\/$/, '');
-    const redirectPath = `/auth/redirect?next=${encodeURIComponent(user.role)}&token=${encodeURIComponent(token)}`;
-    const openUrl = `${baseFrontend}${redirectPath}`;
+  const baseFrontend = FRONTEND_URL || 'https://dormdres.vercel.app';
+  const redirectPath = `/auth/redirect?next=${encodeURIComponent(user.role)}&token=${encodeURIComponent(token)}`;
+  const openUrl = new URL(redirectPath, baseFrontend).toString();
+
+  console.log('[bot] sending web_app url ->', openUrl);
 
     // 📨 Build message
     const greeting =

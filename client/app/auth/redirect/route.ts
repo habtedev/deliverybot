@@ -66,6 +66,8 @@ export async function GET(request: Request) {
   }
 
   const secret = process.env.JWT_SECRET;
+  // Non-sensitive debug: log presence and length of secret (do NOT log the value)
+  console.log('[auth.redirect] JWT_SECRET present? %s, len=%d', !!secret, secret ? secret.length : 0);
   if (!secret) {
     console.error('[auth.redirect] JWT_SECRET missing in Edge environment');
     // Fail closed to avoid setting cookies without verification

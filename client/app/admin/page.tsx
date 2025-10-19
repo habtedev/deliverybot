@@ -5,16 +5,6 @@ import { useEffect, useState } from "react";
 import Cookies from 'js-cookie';
 import UnauthorizedPage from '../unauthorized/page';
 
-function safeDecode(token?: string) {
-  if (!token) return null;
-  try {
-    const payload = token.split('.')[1];
-    return JSON.parse(atob(payload));
-  } catch {
-    return null;
-  }
-}
-
 export default function AdminDashboard() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [user, setUser] = useState<{ name?: string; role?: string; phone?: string } | null>(null);

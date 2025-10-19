@@ -2,14 +2,20 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+// Disable automatic preload for these fonts to avoid "preloaded but not used"
+// console warnings in some browsers and render paths. If you want early
+// preload, set `preload: true` and ensure the font is consumed immediately
+// on page load.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

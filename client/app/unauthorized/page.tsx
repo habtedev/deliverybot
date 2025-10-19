@@ -1,3 +1,4 @@
+// deliverybot/client/app/unauthorized/page.tsx
 "use client";
 
 export default function UnauthorizedPage() {
@@ -23,7 +24,7 @@ export default function UnauthorizedPage() {
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-50"
             onClick={() => {
               // try to open the official bot in a new tab (user may need to open in Telegram)
-              try { window.open('https://t.me/YourBotUsername', '_blank'); } catch {}
+              try { window.open('https://t.me/UoGDelivery_bot', '_blank'); } catch {}
             }}
           >
             Open Bot (Telegram)
@@ -34,7 +35,7 @@ export default function UnauthorizedPage() {
             onClick={() => {
               try {
                 navigator.clipboard.writeText(window.location.href);
-                alert('Link copied — open it in an external browser and try again.');
+                alert("Link copied — open it in an external browser and try again.");
               } catch {
                 alert('Could not copy. Please manually copy the URL.');
               }
@@ -44,7 +45,7 @@ export default function UnauthorizedPage() {
           </button>
         </div>
 
-        <p className="text-sm text-gray-500 mt-2">If you believe this is an error, contact support or try opening the link in your phone's browser.</p>
+  <p className="text-sm text-gray-500 mt-2">If you believe this is an error, contact support or try opening the link in your phone&apos;s browser.</p>
       </div>
     </div>
   );

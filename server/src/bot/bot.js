@@ -1,3 +1,4 @@
+// deliverybot/server/src/bot/bot.js
 // 📦 Imports
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
@@ -71,11 +72,10 @@ bot.on("contact", async (msg) => {
     const payload = { name: user.name, phone: user.phone, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
-    // 🧭 Redirect URL with token
-    const openUrl =
-      user.role === "admin"
-        ? `${ADMIN_URL}?token=${encodeURIComponent(token)}`
-        : `${CUSTOMER_URL}?token=${encodeURIComponent(token)}`;
+    // Build a frontend redirect URL so the frontend's /auth/redirect can set the cookie
+    const baseFrontend = (FRONTEND_URL || 'https://dormdres.vercel.app').replace(/\/$/, '');
+    const redirectPath = `/auth/redirect?next=${encodeURIComponent(user.role)}&token=${encodeURIComponent(token)}`;
+    const openUrl = `${baseFrontend}${redirectPath}`;
 
     // 📨 Build message
     const greeting =

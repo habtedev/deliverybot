@@ -6,6 +6,7 @@ import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import cookieParser from 'cookie-parser';
 import "./bot/bot.js"; // start Telegram bot
 
 dotenv.config();
@@ -13,6 +14,7 @@ connectDB();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors());
 
 // Routes

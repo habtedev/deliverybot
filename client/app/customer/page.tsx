@@ -14,19 +14,7 @@ import {
   User,
 } from "lucide-react";
 
-function safeDecode(token?: string) {
-  if (!token) return null;
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(
-      typeof window !== "undefined"
-        ? atob(payload)
-        : Buffer.from(payload, "base64").toString("utf8")
-    );
-  } catch {
-    return null;
-  }
-}
+// safeDecode removed (not used) to satisfy lint rules
 
 export default function CustomerPage() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -129,7 +117,7 @@ export default function CustomerPage() {
         animate="show"
         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1 } } }}
       >
-        {menu.map((item, i) => (
+  {menu.map((item) => (
           <motion.div
             key={item.href}
             variants={{

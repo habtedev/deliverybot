@@ -1,3 +1,4 @@
+// deliverybot/client/app/auth/redirect/route.ts
 import { NextResponse } from 'next/server';
 
 function base64UrlDecode(input: string) {
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
   const token = url.searchParams.get('token');
   const nextPath = (url.searchParams.get('next') || 'customer').replace(/^\//, '');
 
+  console.log('[auth.redirect] incoming params:', url.searchParams.toString());
   if (!token) {
     // No token — redirect to unauthorized view
     return NextResponse.redirect(new URL('/unauthorized', url));
@@ -56,9 +58,11 @@ export async function GET(request: Request) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    sameSite: 'lax',
+    // Use 'none' in production so cross-site webviews (Telegram) can send cookies.
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge,
   });
+  console.log('[auth.redirect] set auth_token cookie (httpOnly, secure=%s, sameSite=%s, maxAge=%d)', process.env.NODE_ENV === 'production', process.env.NODE_ENV === 'production' ? 'none' : 'lax', maxAge);
 
   return res;
 }

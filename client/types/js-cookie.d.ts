@@ -1,3 +1,4 @@
+// deliverybot/client/types/js-cookie.d.ts
 declare module 'js-cookie' {
   interface CookieAttributes {
     expires?: number | Date;

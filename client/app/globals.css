@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
+/* ========= Root Theme Colors ========= */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --foreground: #1a1a1a;
+  --accent: #f97316; /* Tailwind orange-500 */
+  --radius: 1rem;
+  --transition: all 0.3s ease-in-out;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* ========= Dark Mode ========= */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f0f0f;
+    --foreground: #f5f5f5;
   }
 }
 
+/* ========= Base Styles ========= */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  transition: var(--transition);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ========= Utility Enhancements ========= */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: var(--transition);
+}
+a:hover {
+  opacity: 0.8;
+}
+
+/* ========= Card / Component Aesthetics ========= */
+.card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  transition: var(--transition);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ========= Dark Mode Override ========= */
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: #1c1c1c;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ========= Smooth Animations ========= */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

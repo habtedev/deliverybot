@@ -1,7 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 function safeDecode(token?: string) {
@@ -15,14 +14,21 @@ function safeDecode(token?: string) {
 }
 
 export default function AdminDashboard() {
-  const searchParams = useSearchParams();
   const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
 
   useEffect(() => {
-    const token = searchParams.get('token') || undefined;
-    const decoded = safeDecode(token);
-    setUser(decoded);
-  }, [searchParams]);
+    // Read token from the full URL on the client. This avoids using
+    // `useSearchParams` which can cause server-side prerender/export issues
+    // when mixed with client-only hooks.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token') || undefined;
+      const decoded = safeDecode(token);
+      setUser(decoded);
+    } catch {
+      // window may not be available in some environments — ignore.
+    }
+  }, []);
 
   const adminMenu = [
     { title: "📦 Manage Orders", href: "/admin/orders" },

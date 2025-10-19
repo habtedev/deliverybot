@@ -5,6 +5,7 @@ import connectDB from "./utils/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import "./bot/bot.js"; // start Telegram bot
 
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(cors());
 app.use("/api/users", userRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/wallet", walletRoutes);
+app.use('/auth', authRoutes);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

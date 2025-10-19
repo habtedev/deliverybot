@@ -43,8 +43,10 @@ bot.on("contact", async (msg) => {
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 
   // STEP 4 — SEND CORRECT PAGE BASED ON ROLE, INCLUDING TOKEN
+  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
   if (user.role === "admin") {
-    const adminUrl = `https://dormdres.vercel.app/admin?token=${token}`;
+    const adminUrl = `${(process.env.SERVER_URL || FRONTEND_URL).replace(/\/$/, '')}/auth/redirect?token=${encodeURIComponent(token)}&next=admin`;
     await bot.sendMessage(
       chatId,
       `👋 Hello *${name}*, welcome back Admin!\nAccess your dashboard below.`,
@@ -63,7 +65,7 @@ bot.on("contact", async (msg) => {
       }
     );
   } else {
-    const customerUrl = `https://dormdres.vercel.app/customer?token=${token}`;
+    const customerUrl = `${(process.env.SERVER_URL || FRONTEND_URL).replace(/\/$/, '')}/auth/redirect?token=${encodeURIComponent(token)}&next=customer`;
     await bot.sendMessage(
       chatId,
       `🍔 Hi *${name}*, welcome to FoodCampus!\nOrder your favorite meal now 👇`,

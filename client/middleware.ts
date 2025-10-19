@@ -37,6 +37,9 @@ export async function middleware(request: NextRequest) {
 
   const tokenFromUrl = searchParams.get("token");
   if (tokenFromUrl) {
+    console.log('[middleware] token received via query string; length=%d', tokenFromUrl.length);
+  }
+  if (tokenFromUrl) {
     try {
       const verified = await jwtVerify(tokenFromUrl, new TextEncoder().encode(secret));
       const payload = verified.payload as unknown;
@@ -65,8 +68,10 @@ export async function middleware(request: NextRequest) {
 
   // check cookie or authorization header
   const cookieHeader = request.headers.get("cookie") || "";
+  console.log('[middleware] cookie header present? %s', cookieHeader.length>0);
   const match = cookieHeader.match(/(?:^|;)\s*auth_token=([^;]+)/);
   const token = match ? decodeURIComponent(match[1]) : null;
+  if (token) console.log('[middleware] token found in cookie; length=%d', token.length);
 
   if (!token) {
     const auth = request.headers.get("authorization") || "";

@@ -52,6 +52,12 @@ export async function GET(request: Request) {
   let nextPath = (url.searchParams.get('next') || 'customer').replace(/^\//, '');
 
   console.log('[auth.redirect] incoming params:', url.searchParams.toString());
+  // Debug: token length and masked excerpt
+  console.log('[auth.redirect] token present? %s, length: %d', !!token, token ? token.length : 0);
+  if (token) {
+    const safe = token.length > 20 ? `${token.slice(0,8)}...${token.slice(-8)}` : token;
+    console.log('[auth.redirect] token excerpt:', safe);
+  }
 
   if (!token) {
     // No token — redirect to unauthorized view

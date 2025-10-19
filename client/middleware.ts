@@ -13,11 +13,15 @@ const PROTECTED_PATHS = ["/admin", "/customer"];
 
 function buildAuthCookie(token: string) {
   const isProd = process.env.NODE_ENV === "production";
+  // In production we need SameSite=None and Secure to allow cross-site webviews
+  // (Telegram web_app runs inside an embedded webview). In dev keep Lax for
+  // easier local testing over HTTP.
+  const sameSite = isProd ? "None" : "Lax";
   const parts = [
     `auth_token=${encodeURIComponent(token)}`,
     `Path=/`,
     `Max-Age=${60 * 60}`,
-    `SameSite=Lax`,
+    `SameSite=${sameSite}`,
     `HttpOnly`,
   ];
   if (isProd) parts.push("Secure");

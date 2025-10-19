@@ -1,5 +1,6 @@
 // deliverybot/client/app/auth/redirect/route.ts
 import { NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 
 function base64UrlDecode(input: string) {
   // Pad and replace URL-safe chars
@@ -43,8 +44,28 @@ export async function GET(request: Request) {
   let nextPath = (url.searchParams.get('next') || 'customer').replace(/^\//, '');
 
   console.log('[auth.redirect] incoming params:', url.searchParams.toString());
+
   if (!token) {
     // No token — redirect to unauthorized view
+    console.warn('[auth.redirect] no token in query');
+    return NextResponse.redirect(new URL('/unauthorized', url));
+  }
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    console.error('[auth.redirect] JWT_SECRET missing in Edge environment');
+    // Fail closed to avoid setting cookies without verification
+    return new NextResponse('Server misconfiguration', { status: 500 });
+  }
+
+  // Verify token signature and expiry before setting cookie
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    // Optionally you can inspect payload.role here
+    console.log('[auth.redirect] token verified; payload:', JSON.stringify(payload));
+  } catch (err) {
+    const msg = err && (err as any).message ? (err as any).message : String(err);
+    console.warn('[auth.redirect] token verification failed:', msg);
     return NextResponse.redirect(new URL('/unauthorized', url));
   }
 

@@ -6,32 +6,21 @@ dotenv.config();
 const router = express.Router();
 
 // GET /auth/redirect?token=...&next=customer
-// Sets a secure HttpOnly cookie with the token and redirects to FRONTEND_URL/next
+// Redirects to FRONTEND_URL/next with the token in the query string so the
+// frontend middleware can verify the token and set a cookie on the frontend domain.
+// Example: /auth/redirect?token=...&next=customer  -> redirects to
+// https://your-frontend.example.com/customer?token=...
 router.get('/redirect', (req, res) => {
   const { token, next: nextPath = '' } = req.query;
-  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
 
   if (!token) return res.status(400).send('token required');
 
-  // Cookie options: HttpOnly, Secure in production, SameSite Lax to allow cross-site
-  const isProd = process.env.NODE_ENV === 'production';
-  const maxAge = 60 * 60; // 1 hour
-
-  const cookieOptions = [
-    `HttpOnly`,
-    `Max-Age=${maxAge}`,
-    `Path=/`,
-    `SameSite=Lax`,
-  ];
-
-  if (isProd) cookieOptions.push('Secure');
-
-  // Set cookie name auth_token
-  res.setHeader('Set-Cookie', `auth_token=${encodeURIComponent(token)}; ${cookieOptions.join('; ')}`);
-
-  // Redirect to frontend path
   const sanitizedNext = String(nextPath).replace(/^\//, '');
-  return res.redirect(`${FRONTEND_URL.replace(/\/$/, '')}/${sanitizedNext}`);
+  const target = `${FRONTEND_URL}/${sanitizedNext}?token=${encodeURIComponent(String(token))}`;
+
+  console.log(`[auth] redirect -> ${target}`);
+  return res.redirect(target);
 });
 
 export default router;

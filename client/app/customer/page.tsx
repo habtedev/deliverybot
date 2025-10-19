@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Cookies from 'js-cookie';
+import UnauthorizedPage from '../unauthorized/page';
 import {
   Package,
   Wallet,
@@ -27,16 +29,35 @@ function safeDecode(token?: string) {
 }
 
 export default function CustomerPage() {
-  const [user, setUser] = useState<{ name?: string } | null>(null);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [user, setUser] = useState<{ name?: string; phone?: string } | null>(null);
 
   useEffect(() => {
+    const token = Cookies.get('auth_token');
+    if (!token) {
+      setAuthorized(false);
+      return;
+    }
     try {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get("token") || undefined;
-      const decoded = safeDecode(token);
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const decoded = JSON.parse(jsonPayload);
       setUser(decoded);
-    } catch {}
+      setAuthorized(true);
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      setAuthorized(false);
+    }
   }, []);
+
+  if (authorized === null) return <div>Loading...</div>;
+  if (!authorized) return <UnauthorizedPage />;
 
   const menu = [
     { icon: <UtensilsCrossed size={28} />, sub: "አሁን አዘዙ", label: "Order Now", href: "/customer/order", color: "from-orange-500 to-amber-500" },

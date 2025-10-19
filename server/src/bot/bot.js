@@ -1,23 +1,37 @@
+// 📦 Imports
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import connectDB from "../utils/db.js";
 
+// 🌍 Load environment variables
 dotenv.config();
 connectDB();
 
+// 🤖 Initialize Telegram Bot
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-// 🔹 Base URL (Frontend)
-const FRONTEND_URL = (process.env.FRONTEND_URL || "https://dormdres.vercel.app").replace(/\/$/, "");
+// 🌐 Frontend URLs
+const FRONTEND_URL = process.env.FRONTEND_URL;
+const CUSTOMER_URL = `${FRONTEND_URL}/customer`;
+const ADMIN_URL = `${FRONTEND_URL}/admin`;
 
-// 🪩 STEP 1 — Start the bot
+// 🔐 JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+
+// 🟢 STEP 1: Start Command
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
 
-  await bot.sendMessage(chatId, 
-    "👋 እንኳን ደህና መጡ *FoodCampus*!\n\n🍽 እባክዎ ስልክ ቁጥርዎን ይጋሩ እንድንቀጥል።",
+  await bot.sendMessage(
+    chatId,
+    `
+👋 *Welcome to FoodCampus!*
+
+🍽 እባክዎ ስልክ ቁጥርዎን ይጋሩ እንድንቀጥል።  
+👇 ከዚህ ይጫኑ ለመጋራት:
+`,
     {
       parse_mode: "Markdown",
       reply_markup: {
@@ -29,68 +43,74 @@ bot.onText(/\/start/, async (msg) => {
   );
 });
 
-// 🪩 STEP 2 — Handle Contact (Phone)
+// 🟢 STEP 2: Handle Contact
 bot.on("contact", async (msg) => {
-  const chatId = msg.chat.id;
-  const phone = msg.contact.phone_number.replace("+", "");
-  const name = msg.from.first_name || "User";
+  try {
+    const chatId = msg.chat.id;
+    const phone = msg.contact.phone_number.replace("+", "");
+    const name = msg.from.first_name || "User";
 
-  let user = await User.findOne({ phone });
-  if (!user) {
-    user = await User.create({ telegramId: chatId, name, phone, role: "customer" });
-  }
+    // 🧭 Automatically assign admin role to your number
+    const isAdmin = phone === "251945870700";
 
-  // Generate secure JWT token
-  const payload = { name: user.name, phone: user.phone, role: user.role };
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "2h" });
+    // 🔎 Find or create user
+    let user = await User.findOne({ phone });
+    if (!user) {
+      user = await User.create({
+        telegramId: chatId,
+        name,
+        phone,
+        role: isAdmin ? "admin" : "customer",
+      });
+    } else if (isAdmin && user.role !== "admin") {
+      user.role = "admin";
+      await user.save();
+    }
 
-  // Build redirect URL to frontend's /auth/redirect which will forward token
-  const redirectUrl = `${FRONTEND_URL}/auth/redirect?token=${encodeURIComponent(token)}&next=${encodeURIComponent(user.role)}`;
+    // 🔐 Generate JWT Token
+    const payload = { name: user.name, phone: user.phone, role: user.role };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
-  // Send Telegram response
-  if (user.role === "admin") {
-    await bot.sendMessage(
-      chatId,
-      `👋 ሰላም *${name}*, እንኳን ደህና መጡ አስተዳዳሪ!\n\n🧭 የአስተዳዳሪ ዳሽቦርዱን እዚህ ይክፈቱ 👇`,
-      {
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🛠 Admin Dashboard ክፈት",
-                web_app: { url: redirectUrl },
-              },
-            ],
-          ],
-        },
-      }
-    );
-  } else {
-    await bot.sendMessage(
-      chatId,
-      `🍔 ሰላም *${name}*, እንኳን ደህና መጡ *FoodCampus*!\n\nትእዛዝዎን እንዲሰጡ እዚህ ይጫኑ 👇`,
-      {
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🚀 የደንበኛ መነሻ ገፅ ክፈት",
-                web_app: { url: redirectUrl },
-              },
-            ],
-          ],
-        },
-      }
-    );
+    // 🧭 Redirect URL with token
+    const openUrl =
+      user.role === "admin"
+        ? `${ADMIN_URL}?token=${encodeURIComponent(token)}`
+        : `${CUSTOMER_URL}?token=${encodeURIComponent(token)}`;
+
+    // 📨 Build message
+    const greeting =
+      user.role === "admin"
+        ? `👋 ሰላም *${name}*, እንኳን ደህና መጡ አስተዳዳሪ!\n\n🧭 የአስተዳዳሪ ዳሽቦርዱን እዚህ ይክፈቱ 👇`
+        : `🍔 ሰላም *${name}*, እንኳን ደህና መጡ *FoodCampus*!\n\n🚀 ትእዛዝዎን እንዲሰጡ እዚህ ይጫኑ 👇`;
+
+    const buttonText =
+      user.role === "admin"
+        ? "🧭 Admin Dashboard ክፈት"
+        : "🍱 የደንበኛ ገፅ ክፈት";
+
+    // 💬 Send Message with Inline Button
+    await bot.sendMessage(chatId, greeting, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[{ text: buttonText, web_app: { url: openUrl } }]],
+      },
+    });
+
+    console.log(`✅ ${user.role.toUpperCase()} logged in: ${user.name} (${phone})`);
+  } catch (error) {
+    console.error("❌ Error handling contact:", error);
   }
 });
 
-// 🧩 Optional: Fallback for unknown commands
+// 🧩 STEP 3: Fallback for Other Messages
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
-  if (!msg.contact && !msg.text.startsWith("/")) {
-    await bot.sendMessage(chatId, "📍 እባክዎ /start ይጫኑ ወይም ስልክ ቁጥር ያጋሩ።");
-  }
+
+  if (msg.contact || msg.text?.startsWith("/")) return;
+
+  await bot.sendMessage(
+    chatId,
+    "📍 እባክዎ /start ይጫኑ ወይም ስልክ ቁጥር ያጋሩ።",
+    { parse_mode: "Markdown" }
+  );
 });

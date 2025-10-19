@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Cookies from 'js-cookie';
+import UnauthorizedPage from '../unauthorized/page';
 
 function safeDecode(token?: string) {
   if (!token) return null;
@@ -14,21 +16,35 @@ function safeDecode(token?: string) {
 }
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState<{ name?: string; role?: string } | null>(null);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [user, setUser] = useState<{ name?: string; role?: string; phone?: string } | null>(null);
 
   useEffect(() => {
-    // Read token from the full URL on the client. This avoids using
-    // `useSearchParams` which can cause server-side prerender/export issues
-    // when mixed with client-only hooks.
+    const token = Cookies.get('auth_token');
+    if (!token) {
+      setAuthorized(false);
+      return;
+    }
     try {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token') || undefined;
-      const decoded = safeDecode(token);
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const decoded = JSON.parse(jsonPayload);
       setUser(decoded);
-    } catch {
-      // window may not be available in some environments — ignore.
+      setAuthorized(true);
+    } catch (err) {
+      console.error('Failed to decode token:', err);
+      setAuthorized(false);
     }
   }, []);
+
+  if (authorized === null) return <div>Loading...</div>;
+  if (!authorized) return <UnauthorizedPage />;
 
   const adminMenu = [
     { title: "📦 Manage Orders", href: "/admin/orders" },
